@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="DIB Car Finance">
+<title>DIB Finance Tracker Secure</title>
+<style>
+body {
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  background:#f4f7fb;
+}
+.login {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  padding:20px;
+}
+.box {
+  background:white;
+  padding:28px;
+  border-radius:20px;
+  width:340px;
+  max-width:100%;
+  box-shadow:0 10px 30px rgba(0,0,0,.10);
+}
+h2 { margin:0 0 8px; text-align:center; }
+p { text-align:center; color:#667085; }
+input {
+  width:100%;
+  padding:13px;
+  margin-top:12px;
+  border-radius:14px;
+  border:1px solid #d0d5dd;
+  box-sizing:border-box;
+  font-size:16px;
+}
+button {
+  width:100%;
+  padding:13px;
+  margin-top:14px;
+  border:none;
+  border-radius:14px;
+  background:#0b6b57;
+  color:white;
+  font-weight:800;
+  cursor:pointer;
+  font-size:16px;
+}
+#error {
+  color:#b42318;
+  font-size:14px;
+  margin-top:10px;
+  text-align:center;
+}
+#appRoot { display:none; }
+</style>
+</head>
+<body>
+
+<div class="login" id="loginScreen">
+  <div class="box">
+    <h2>DIB Finance Tracker</h2>
+    <p>Protected Access</p>
+    <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
+    <button onclick="login()">Open Tracker</button>
+    <div id="error"></div>
+  </div>
+</div>
+
+<div id="appRoot"></div>
+
+<script>
+const APP_PASSWORD = "1234";
+const FULL_TRACKER_HTML = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="DIB Car Finance" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>DIB Car Finance Tracker V2</title>
+  <style>
+    :root { --bg:#f6f7fb; --card:#fff; --text:#172033; --muted:#667085; --brand:#0b6b57; --brand2:#12806a; --line:#e5e7eb; --danger:#b42318; --warn:#b54708; }
+    * { box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    header { padding: calc(18px + env(safe-area-inset-top)) 18px 16px; background:linear-gradient(135deg,var(--brand),var(--brand2)); color:white; border-bottom-left-radius:26px; border-bottom-right-radius:26px; position:sticky; top:0; z-index:2; }
+    h1 { margin:0; font-size:22px; }
+    h3 { margin:0 0 12px; }
+    .sub { opacity:.92; margin-top:6px; font-size:14px; }
+    main { padding:16px; max-width:820px; margin:auto; padding-bottom:calc(24px + env(safe-area-inset-bottom)); }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px; box-shadow:0 6px 18px rgba(16,24,40,.05); margin-bottom:12px; }
+    .metric { font-size:13px; color:var(--muted); }
+    .value { font-size:21px; font-weight:800; margin-top:4px; }
+    button, select, input { width:100%; border-radius:14px; padding:13px; font-size:15px; }
+    button { border:0; background:var(--brand); color:white; cursor:pointer; font-weight:800; }
+    button.secondary { background:#eef7f4; color:var(--brand); border:1px solid #bfe1d9; }
+    button.danger { background:#fff1f0; color:var(--danger); border:1px solid #fecdca; }
+    button.warn { background:#fff7ed; color:var(--warn); border:1px solid #fed7aa; }
+    select, input { background:white; border:1px solid var(--line); color:var(--text); }
+    label { display:block; font-size:12px; font-weight:800; color:var(--muted); margin:8px 0 5px; }
+    .row { display:flex; gap:10px; align-items:center; }
+    .row > * { flex:1; }
+    table { width:100%; border-collapse:collapse; font-size:14px; }
+    th, td { padding:10px 8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle; }
+    th { color:var(--muted); font-size:12px; }
+    .paid { color:var(--brand); font-weight:800; }
+    .partial { color:var(--warn); font-weight:800; }
+    .unpaid { color:var(--danger); font-weight:800; }
+    .small { color:var(--muted); font-size:12px; line-height:1.45; }
+    .pill { display:inline-block; padding:4px 8px; border-radius:999px; background:#eef7f4; color:var(--brand); font-weight:800; font-size:12px; }
+    .scroll { overflow:auto; }
+    .toast { position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom)); background:#172033; color:white; padding:13px 14px; border-radius:14px; display:none; z-index:5; text-align:center; }
+    @media (max-width:560px){
+      .value{font-size:18px;}
+      .row{flex-direction:column;}
+      .row.inline{flex-direction:row;}
+      th:nth-child(1),td:nth-child(1){display:none;}
+      table{font-size:13px;}
+      th,td{padding:9px 6px;}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>DIB Car Finance Tracker V2</h1>
+  <div class="sub">Dubai Islamic Bank • AED 1,226 monthly • Started 24/05/2026 • 60 months</div>
+</header>
+
+<main>
+  <section class="grid">
+    <div class="card"><div class="metric">Paid Amount</div><div class="value" id="paidAmount">AED 0</div></div>
+    <div class="card"><div class="metric">Remaining</div><div class="value" id="remainingAmount">AED 0</div></div>
+    <div class="card"><div class="metric">Paid / Total</div><div class="value" id="paidMonths">0 / 60</div></div>
+    <div class="card"><div class="metric">Next Payment</div><div class="value" id="nextPayment">—</div></div>
+  </section>
+
+  <section class="card">
+    <h3>Enter Payment Manually</h3>
+    <div class="row">
+      <div>
+        <label>Payment Date</label>
+        <input id="manualDate" type="date">
+      </div>
+      <div>
+        <label>Payment Time</label>
+        <input id="manualTime" type="time">
+      </div>
+      <div>
+        <label>Amount AED</label>
+        <input id="manualAmount" type="number" min="0" step="0.01" value="1226">
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label>Apply To Installment</label>
+        <select id="manualInstallment"></select>
+      </div>
+      <div>
+        <label>Note</label>
+        <input id="manualNote" type="text" placeholder="Optional note">
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <button onclick="saveManualPayment()">Save Payment Automatically</button>
+    </div>
+    <p class="small">Payments are saved automatically in this tracker using your iPhone/Safari browser storage. Use Backup Export to keep a copy.</p>
+  </section>
+
+  <section class="card">
+    <h3>Import / Backup</h3>
+    <div class="row">
+      <button class="secondary" onclick="downloadJSON()">Export Backup JSON</button>
+      <button class="secondary" onclick="document.getElementById('importFile').click()">Import Backup JSON</button>
+      <input id="importFile" type="file" accept="application/json,.json" style="display:none" onchange="importJSON(event)">
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Reports</h3>
+    <div class="row">
+      <select id="reportType">
+        <option value="paid">Paid amount report</option>
+        <option value="remaining">Remaining amount report</option>
+        <option value="total">Total report with dates</option>
+        <option value="history">Manual payment history report</option>
+      </select>
+      <button onclick="exportPDF()">Export PDF</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Reminders</h3>
+    <div class="row">
+      <button class="secondary" onclick="requestNotifications()">Enable iOS Notifications</button>
+      <button class="warn" onclick="markNextPaid()">Mark Next AED 1,226 Paid</button>
+    </div>
+    <p class="small">Reminder target: 2 days before each due date. For iPhone, open in Safari, tap Share, then “Add to Home Screen” for the best app-like experience.</p>
+  </section>
+
+  <section class="card">
+    <h3>Payment History</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>#</th><th>Date</th><th>Time</th><th>Amount</th><th>Installment</th><th>Action</th></tr></thead>
+        <tbody id="history"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Payment Schedule</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>#</th><th>Due Date</th><th>Paid</th><th>Remaining</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody id="schedule"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <button class="danger" onclick="resetAll()">Reset All Records</button>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"><\/script>
+<script>
+const START_DATE = new Date(2026, 4, 24);
+const MONTHS = 60;
+const MONTHLY = 1226;
+const TOTAL = MONTHS * MONTHLY;
+const STORAGE_KEY = "dib_car_finance_tracker_v2";
+
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function nowTime(){ return new Date().toTimeString().slice(0,5); }
+function fmtAED(n){ return "AED " + Number(n || 0).toLocaleString("en-AE", {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtDate(d){ return d.toLocaleDateString("en-GB", { day:"2-digit", month:"short", year:"numeric" }); }
+function dueDate(i){ return new Date(START_DATE.getFullYear(), START_DATE.getMonth()+i, 24); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; setTimeout(()=>t.style.display="none",2200); }
+
+function defaultData(){ return { payments: [] }; }
+function load(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultData(); }
+  catch { return defaultData(); }
+}
+function save(data){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function installmentTotals(){
+  const data = load();
+  const totals = {};
+  data.payments.forEach(p => {
+    const no = Number(p.installment);
+    totals[no] = (totals[no] || 0) + Number(p.amount || 0);
+  });
+  return totals;
+}
+
+function makeRows(){
+  const totals = installmentTotals();
+  return Array.from({length:MONTHS}, (_,i)=>{
+    const no = i+1;
+    const paidAmount = totals[no] || 0;
+    const remaining = Math.max(MONTHLY - paidAmount, 0);
+    const status = paidAmount >= MONTHLY ? "Paid" : paidAmount > 0 ? "Partial" : "Unpaid";
+    return { no, due:dueDate(i), paidAmount, remaining, status };
+  });
+}
+
+function populateInstallments(){
+  const rows = makeRows();
+  const select = document.getElementById("manualInstallment");
+  const current = select.value;
+  select.innerHTML = rows.map(r => \`<option value="\${r.no}">#\${r.no} — \${fmtDate(r.due)} — \${r.status}</option>\`).join("");
+  const next = rows.find(r=>r.status !== "Paid");
+  select.value = current || (next ? next.no : 60);
+}
+
+function render(){
+  const data = load();
+  const rows = makeRows();
+  const totalPaid = data.payments.reduce((s,p)=>s + Number(p.amount || 0), 0);
+  const paidMonths = rows.filter(r=>r.status === "Paid").length;
+  const next = rows.find(r=>r.status !== "Paid");
+  document.getElementById("paidAmount").textContent = fmtAED(totalPaid);
+  document.getElementById("remainingAmount").textContent = fmtAED(Math.max(TOTAL-totalPaid,0));
+  document.getElementById("paidMonths").textContent = paidMonths + " / " + MONTHS;
+  document.getElementById("nextPayment").textContent = next ? fmtDate(next.due) : "Completed";
+
+  populateInstallments();
+
+  document.getElementById("schedule").innerHTML = rows.map(r => \`
+    <tr>
+      <td>\${r.no}</td>
+      <td>\${fmtDate(r.due)}</td>
+      <td>\${fmtAED(r.paidAmount)}</td>
+      <td>\${fmtAED(r.remaining)}</td>
+      <td><span class="\${r.status === "Paid" ? "paid" : r.status === "Partial" ? "partial" : "unpaid"}">\${r.status}</span></td>
+      <td><button class="\${r.status === "Paid" ? "danger" : "secondary"}" onclick="\${r.status === "Paid" ? \`clearInstallment(\${r.no})\` : \`quickPay(\${r.no})\`}">\${r.status === "Paid" ? "Clear" : "Pay"}</button></td>
+    </tr>\`).join("");
+
+  const payments = [...data.payments].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  document.getElementById("history").innerHTML = payments.length ? payments.map(p => \`
+    <tr>
+      <td></td>
+      <td>\${p.date}</td>
+      <td>\${p.time || "-"}</td>
+      <td>\${fmtAED(p.amount)}</td>
+      <td>#\${p.installment}</td>
+      <td><button class="danger" onclick="deletePayment('\${p.id}')">Delete</button></td>
+    </tr>\`).join("") : \`<tr><td colspan="6" class="small">No payment records yet.</td></tr>\`;
+}
+
+function saveManualPayment(){
+  const date = document.getElementById("manualDate").value || todayISO();
+  const time = document.getElementById("manualTime").value || nowTime();
+  const amount = Number(document.getElementById("manualAmount").value || 0);
+  const installment = Number(document.getElementById("manualInstallment").value);
+  const note = document.getElementById("manualNote").value.trim();
+  if(!amount || amount <= 0){ alert("Please enter a valid payment amount."); return; }
+  const data = load();
+  data.payments.push({ id:uid(), date, time, amount, installment, note });
+  save(data);
+  document.getElementById("manualAmount").value = MONTHLY;
+  document.getElementById("manualNote").value = "";
+  render();
+  toast("Payment saved automatically.");
+}
+
+function quickPay(no){
+  const rows = makeRows();
+  const row = rows.find(r=>r.no === no);
+  const data = load();
+  data.payments.push({ id:uid(), date:todayISO(), time:nowTime(), amount:row.remaining || MONTHLY, installment:no, note:"Quick pay" });
+  save(data); render(); toast("Installment payment saved.");
+}
+
+function markNextPaid(){
+  const next = makeRows().find(r=>r.status !== "Paid");
+  if(next) quickPay(next.no);
+}
+
+function clearInstallment(no){
+  if(!confirm("Delete all payment records for installment #" + no + "?")) return;
+  const data = load();
+  data.payments = data.payments.filter(p => Number(p.installment) !== Number(no));
+  save(data); render(); toast("Installment cleared.");
+}
+
+function deletePayment(id){
+  const data = load();
+  data.payments = data.payments.filter(p => p.id !== id);
+  save(data); render(); toast("Payment deleted.");
+}
+
+function resetAll(){
+  if(confirm("Reset all payments and history?")){
+    localStorage.removeItem(STORAGE_KEY);
+    render();
+    toast("Tracker reset.");
+  }
+}
+
+function downloadJSON(){
+  const blob = new Blob([JSON.stringify(load(), null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "dib-car-finance-payment-backup-v2.json";
+  a.click();
+}
+
+function importJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const imported = JSON.parse(reader.result);
+      if(!imported.payments || !Array.isArray(imported.payments)) throw new Error("Invalid format");
+      save(imported);
+      render();
+      toast("Backup imported successfully.");
+    } catch(e) {
+      alert("Import failed. Please select a valid tracker backup JSON file.");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+function requestNotifications(){
+  if(!("Notification" in window)){ alert("Notifications are not supported in this browser."); return; }
+  Notification.requestPermission().then(p => {
+    if(p === "granted"){
+      new Notification("DIB Car Finance reminders enabled", { body:"Payment due each month on the 24th. Reminder target is 2 days before." });
+    } else {
+      alert("Notification permission was not granted.");
+    }
+  });
+}
+
+function exportPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const data = load();
+  const rows = makeRows();
+  const type = document.getElementById("reportType").value;
+  const totalPaid = data.payments.reduce((s,p)=>s + Number(p.amount || 0), 0);
+  const remaining = Math.max(TOTAL-totalPaid,0);
+  let y = 16;
+
+  doc.setFontSize(16);
+  doc.text("DIB Car Finance Tracker V2", 14, y); y += 8;
+  doc.setFontSize(10);
+  doc.text("Dubai Islamic Bank | Start: 24/05/2026 | Monthly: AED 1,226 | Term: 60 months", 14, y); y += 7;
+  doc.text("Paid: " + fmtAED(totalPaid) + " | Remaining: " + fmtAED(remaining) + " | Total: " + fmtAED(TOTAL), 14, y); y += 9;
+  doc.text("Report type: " + type, 14, y); y += 8;
+
+  doc.setFontSize(9);
+
+  if(type === "history"){
+    doc.text("Date", 14, y); doc.text("Time", 46, y); doc.text("Amount", 70, y); doc.text("Installment", 108, y); doc.text("Note", 145, y); y += 5;
+    doc.line(14, y, 196, y); y += 6;
+    data.payments.forEach(p => {
+      if(y > 280){ doc.addPage(); y = 16; }
+      doc.text(String(p.date), 14, y);
+      doc.text(String(p.time || "-"), 46, y);
+      doc.text(fmtAED(p.amount), 70, y);
+      doc.text("#" + p.installment, 108, y);
+      doc.text(String(p.note || "-").slice(0,28), 145, y);
+      y += 6;
+    });
+  } else {
+    const chosen = type === "paid" ? rows.filter(r=>r.status === "Paid") : type === "remaining" ? rows.filter(r=>r.status !== "Paid") : rows;
+    doc.text("#", 14, y); doc.text("Due Date", 26, y); doc.text("Paid", 76, y); doc.text("Remaining", 112, y); doc.text("Status", 154, y); y += 5;
+    doc.line(14, y, 196, y); y += 6;
+    chosen.forEach(r => {
+      if(y > 280){ doc.addPage(); y = 16; }
+      doc.text(String(r.no), 14, y);
+      doc.text(fmtDate(r.due), 26, y);
+      doc.text(fmtAED(r.paidAmount), 76, y);
+      doc.text(fmtAED(r.remaining), 112, y);
+      doc.text(r.status, 154, y);
+      y += 6;
+    });
+  }
+
+  doc.save("DIB-Car-Finance-V2-" + type + "-report.pdf");
+}
+
+document.getElementById("manualDate").value = todayISO();
+document.getElementById("manualTime").value = nowTime();
+render();
+<\/script>
+</body>
+</html>
+`;
+
+function login(){
+  const pass = document.getElementById("password").value;
+  if(pass === APP_PASSWORD){
+    localStorage.setItem("tracker_logged_in","yes");
+    openTracker();
+  } else {
+    document.getElementById("error").innerText = "Wrong password";
+  }
+}
+
+function openTracker(){
+  document.getElementById("loginScreen").style.display = "none";
+  const root = document.getElementById("appRoot");
+  root.style.display = "block";
+  document.open();
+  document.write(FULL_TRACKER_HTML);
+  document.close();
+}
+
+document.getElementById("password").addEventListener("keydown", function(e){
+  if(e.key === "Enter") login();
+});
+</script>
+
+</body>
+</html>
