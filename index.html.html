@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>DIB Car Finance Tracker V4</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#101828;--muted:#667085;--brand:#0b6b57;--brand2:#12806a;--line:#e5e7eb;--danger:#b42318;--warn:#b54708}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;color:var(--text)}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.loginbox,.card{background:white;border:1px solid var(--line);border-radius:22px;box-shadow:0 6px 18px rgba(16,24,40,.06)}
+.loginbox{width:340px;max-width:100%;padding:26px}
+.loginbox h2{text-align:center;margin:0 0 8px}
+.loginbox p{text-align:center;color:var(--muted)}
+#app{display:none}
+header{padding:calc(18px + env(safe-area-inset-top)) 18px 18px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:white;border-bottom-left-radius:26px;border-bottom-right-radius:26px;position:sticky;top:0;z-index:2}
+h1{margin:0;font-size:26px;line-height:1.15}
+.sub{opacity:.92;margin-top:8px;font-size:16px;line-height:1.35}
+main{padding:16px;max-width:920px;margin:auto;padding-bottom:calc(30px + env(safe-area-inset-bottom))}
+.card{padding:16px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.metric{font-size:14px;color:var(--muted)}
+.value{font-size:23px;font-weight:900;margin-top:6px}
+label{display:block;font-size:13px;font-weight:900;color:var(--muted);margin:10px 0 6px}
+input,select,button{width:100%;font-size:16px;border-radius:16px;padding:14px}
+input,select{border:1px solid var(--line);background:white;color:var(--text);min-height:52px}
+button{border:0;background:var(--brand);color:white;font-weight:900;cursor:pointer;min-height:54px}
+button.secondary{background:#eef7f4;color:var(--brand);border:1px solid #bfe1d9}
+button.danger{background:#fff1f0;color:var(--danger);border:1px solid #fecdca}
+button.small{min-height:38px;padding:8px 10px;border-radius:12px;font-size:13px}
+.row{display:flex;gap:12px;align-items:flex-end}
+.row>*{flex:1}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 7px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{color:var(--muted);font-size:12px}
+.paid{color:var(--brand);font-weight:900}.partial{color:var(--warn);font-weight:900}.unpaid{color:var(--danger);font-weight:900}
+.scroll{overflow:auto}
+.smalltext{font-size:12px;color:var(--muted);line-height:1.45}
+.progressWrap{height:18px;background:#e6f2ef;border-radius:99px;overflow:hidden;margin-top:10px}
+.progressBar{height:100%;width:0%;background:var(--brand);transition:.25s}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));background:#101828;color:white;padding:14px;border-radius:16px;text-align:center;display:none;z-index:99}
+@media(max-width:650px){
+.grid{grid-template-columns:1fr 1fr}
+.value{font-size:20px}
+.row{flex-direction:column;align-items:stretch}
+.hide-mobile{display:none}
+table{font-size:13px}
+th,td{padding:9px 5px}
+}
+</style>
+</head>
+<body>
+<div class="login" id="loginScreen">
+  <div class="loginbox">
+    <h2>DIB Finance Tracker</h2>
+    <p>Protected Access</p>
+    <input id="password" type="password" placeholder="Enter password">
+    <button onclick="login()">Open Tracker</button>
+    <div id="loginError" style="color:#b42318;text-align:center;margin-top:10px"></div>
+  </div>
+</div>
+
+<div id="app">
+<header>
+  <h1>DIB Car Finance Tracker V4</h1>
+  <div class="sub">Dubai Islamic Bank • AED 1,226 monthly • Started 24/05/2026 • 60 months</div>
+</header>
+
+<main>
+<section class="grid">
+  <div class="card"><div class="metric">Paid Amount</div><div class="value" id="paidAmount">AED 0.00</div></div>
+  <div class="card"><div class="metric">Remaining</div><div class="value" id="remainingAmount">AED 73,560.00</div></div>
+  <div class="card"><div class="metric">Paid / Total</div><div class="value" id="paidMonths">0 / 60</div></div>
+  <div class="card"><div class="metric">Next Payment</div><div class="value" id="nextPayment">24 May 2026</div></div>
+</section>
+
+<section class="card">
+  <h2 style="margin-top:0">Progress Tracker</h2>
+  <div><b id="progressText">0%</b> completed</div>
+  <div class="progressWrap"><div class="progressBar" id="progressBar"></div></div>
+</section>
+
+<section class="card">
+  <h2 style="margin-top:0">Enter Payment Manually</h2>
+  <div class="row">
+    <div><label>Payment Date</label><input id="manualDate" type="date"></div>
+    <div><label>Payment Time</label><input id="manualTime" type="time"></div>
+    <div><label>Amount AED</label><input id="manualAmount" type="number" min="0" step="0.01" value="1226"></div>
+  </div>
+  <div class="row">
+    <div><label>Apply To Installment</label><select id="manualInstallment"></select></div>
+    <div><label>Note</label><input id="manualNote" type="text" placeholder="Optional note"></div>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button onclick="saveManualPayment()">Save Payment</button>
+    <button class="secondary" onclick="resetFormForNext()">Clear / Next Payment</button>
+  </div>
+  <p class="smalltext">After saving, totals and progress update instantly. The form clears and selects the next unpaid installment.</p>
+</section>
+
+<section class="card">
+  <h2 style="margin-top:0">Payment History - Editable Sheet</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Date</th><th>Time</th><th>Amount</th><th>Inst.</th><th class="hide-mobile">Note</th><th>Action</th></tr></thead>
+      <tbody id="history"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2 style="margin-top:0">Payment Schedule</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>#</th><th>Due Date</th><th>Paid</th><th>Remaining</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="schedule"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card">
+  <h2 style="margin-top:0">Reports & Backup</h2>
+  <div class="row">
+    <select id="reportType">
+      <option value="total">Total report with dates</option>
+      <option value="paid">Paid amount report</option>
+      <option value="remaining">Remaining amount report</option>
+      <option value="history">Payment history report</option>
+    </select>
+    <button onclick="exportPDF()">Export PDF</button>
+  </div>
+  <div class="row" style="margin-top:12px">
+    <button class="secondary" onclick="downloadJSON()">Export Backup JSON</button>
+    <button class="secondary" onclick="document.getElementById('importFile').click()">Import Backup JSON</button>
+    <input id="importFile" type="file" accept=".json,application/json" style="display:none" onchange="importJSON(event)">
+  </div>
+  <div style="margin-top:12px"><button class="danger" onclick="resetAll()">Reset All Records</button></div>
+</section>
+</main>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+const PASSWORD = "1234";
+const START_DATE = new Date(2026, 4, 24);
+const MONTHS = 60;
+const MONTHLY = 1226;
+const TOTAL = MONTHS * MONTHLY;
+const STORAGE_KEY = "dib_finance_tracker_v4";
+let editingId = null;
+
+function login(){
+  const p = document.getElementById("password").value;
+  if(p === PASSWORD){
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    initApp();
+  }else{
+    document.getElementById("loginError").textContent = "Wrong password";
+  }
+}
+document.getElementById("password").addEventListener("keydown", e => { if(e.key === "Enter") login(); });
+
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function isoToday(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function timeNow(){ const d=new Date(); return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function fmtAED(n){ return "AED " + Number(n || 0).toLocaleString("en-AE",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(d){ return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}); }
+function dueDate(i){ return new Date(START_DATE.getFullYear(), START_DATE.getMonth()+i, 24); }
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; setTimeout(()=>t.style.display="none",2200); }
+
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if(d && Array.isArray(d.payments)) return d;
+  }catch(e){}
+  return {payments:[]};
+}
+function save(d){ localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+
+function totalsByInstallment(){
+  const totals = {};
+  load().payments.forEach(p=>{
+    const no = Number(p.installment);
+    totals[no] = (totals[no] || 0) + Number(p.amount || 0);
+  });
+  return totals;
+}
+function scheduleRows(){
+  const totals = totalsByInstallment();
+  return Array.from({length:MONTHS},(_,i)=>{
+    const no=i+1;
+    const paid = totals[no] || 0;
+    const remaining = Math.max(MONTHLY-paid,0);
+    const status = paid >= MONTHLY ? "Paid" : paid > 0 ? "Partial" : "Unpaid";
+    return {no,due:dueDate(i),paid,remaining,status};
+  });
+}
+function nextUnpaidNo(){
+  const row = scheduleRows().find(r=>r.status !== "Paid");
+  return row ? row.no : MONTHS;
+}
+function resetFormForNext(){
+  document.getElementById("manualDate").value = "";
+  document.getElementById("manualTime").value = "";
+  document.getElementById("manualAmount").value = "1226";
+  document.getElementById("manualNote").value = "";
+  document.getElementById("manualInstallment").value = nextUnpaidNo();
+}
+function fillInstallmentSelect(){
+  const select = document.getElementById("manualInstallment");
+  const current = select.value;
+  select.innerHTML = scheduleRows().map(r=>`<option value="${r.no}">#${r.no} — ${fmtDate(r.due)} — ${r.status}</option>`).join("");
+  select.value = current || nextUnpaidNo();
+}
+
+function render(){
+  const data = load();
+  const rows = scheduleRows();
+  const totalPaid = data.payments.reduce((s,p)=>s+Number(p.amount||0),0);
+  const remaining = Math.max(TOTAL-totalPaid,0);
+  const paidMonths = rows.filter(r=>r.status==="Paid").length;
+  const next = rows.find(r=>r.status!=="Paid");
+  const progress = Math.min(100, (totalPaid/TOTAL)*100);
+
+  document.getElementById("paidAmount").textContent = fmtAED(totalPaid);
+  document.getElementById("remainingAmount").textContent = fmtAED(remaining);
+  document.getElementById("paidMonths").textContent = paidMonths + " / " + MONTHS;
+  document.getElementById("nextPayment").textContent = next ? fmtDate(next.due) : "Completed";
+  document.getElementById("progressText").textContent = progress.toFixed(1) + "%";
+  document.getElementById("progressBar").style.width = progress + "%";
+
+  fillInstallmentSelect();
+
+  document.getElementById("schedule").innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.no}</td>
+      <td>${fmtDate(r.due)}</td>
+      <td>${fmtAED(r.paid)}</td>
+      <td>${fmtAED(r.remaining)}</td>
+      <td><span class="${r.status==="Paid"?"paid":r.status==="Partial"?"partial":"unpaid"}">${r.status}</span></td>
+      <td><button class="${r.status==="Paid"?"danger":"secondary"} small" onclick="${r.status==="Paid"?`clearInstallment(${r.no})`:`quickPay(${r.no})`}">${r.status==="Paid"?"Clear":"Pay"}</button></td>
+    </tr>`).join("");
+
+  const payments = [...data.payments].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+  document.getElementById("history").innerHTML = payments.length ? payments.map(p=>{
+    if(editingId === p.id){
+      return `<tr>
+        <td><input id="editDate" type="date" value="${p.date}"></td>
+        <td><input id="editTime" type="time" value="${p.time||""}"></td>
+        <td><input id="editAmount" type="number" step="0.01" value="${p.amount}"></td>
+        <td><input id="editInstallment" type="number" min="1" max="60" value="${p.installment}"></td>
+        <td class="hide-mobile"><input id="editNote" type="text" value="${p.note||""}"></td>
+        <td><button class="small" onclick="saveEdit('${p.id}')">Save</button><button class="secondary small" onclick="cancelEdit()">Cancel</button></td>
+      </tr>`;
+    }
+    return `<tr>
+      <td>${p.date}</td><td>${p.time||"-"}</td><td>${fmtAED(p.amount)}</td><td>#${p.installment}</td><td class="hide-mobile">${p.note||"-"}</td>
+      <td><button class="secondary small" onclick="editPayment('${p.id}')">Edit</button><button class="danger small" onclick="deletePayment('${p.id}')">Delete</button></td>
+    </tr>`;
+  }).join("") : `<tr><td colspan="6" class="smalltext">No payment records yet.</td></tr>`;
+}
+
+function saveManualPayment(){
+  const amount = Number(document.getElementById("manualAmount").value || 0);
+  const installment = Number(document.getElementById("manualInstallment").value);
+  if(amount <= 0){ alert("Enter a valid amount."); return; }
+  const data = load();
+  data.payments.push({
+    id: uid(),
+    date: document.getElementById("manualDate").value || isoToday(),
+    time: document.getElementById("manualTime").value || timeNow(),
+    amount,
+    installment,
+    note: document.getElementById("manualNote").value.trim()
+  });
+  save(data);
+  render();
+  resetFormForNext();
+  render();
+  toast("Payment saved and tracker updated.");
+}
+function quickPay(no){
+  const row = scheduleRows().find(r=>r.no===no);
+  const data = load();
+  data.payments.push({id:uid(),date:isoToday(),time:timeNow(),amount:row.remaining||MONTHLY,installment:no,note:"Quick pay"});
+  save(data); render(); resetFormForNext(); render(); toast("Payment saved.");
+}
+function editPayment(id){ editingId=id; render(); }
+function cancelEdit(){ editingId=null; render(); }
+function saveEdit(id){
+  const amount=Number(document.getElementById("editAmount").value||0);
+  const installment=Number(document.getElementById("editInstallment").value||0);
+  if(amount<=0 || installment<1 || installment>60){ alert("Enter valid amount and installment 1-60."); return; }
+  const data=load();
+  const p=data.payments.find(x=>x.id===id);
+  if(p){
+    p.date=document.getElementById("editDate").value||isoToday();
+    p.time=document.getElementById("editTime").value||timeNow();
+    p.amount=amount;
+    p.installment=installment;
+    p.note=document.getElementById("editNote")?.value||"";
+  }
+  editingId=null; save(data); render(); resetFormForNext(); toast("Payment updated.");
+}
+function deletePayment(id){
+  const data=load();
+  data.payments=data.payments.filter(p=>p.id!==id);
+  save(data); render(); resetFormForNext(); toast("Payment deleted.");
+}
+function clearInstallment(no){
+  if(!confirm("Clear all payment records for installment #"+no+"?")) return;
+  const data=load();
+  data.payments=data.payments.filter(p=>Number(p.installment)!==Number(no));
+  save(data); render(); resetFormForNext(); toast("Installment cleared.");
+}
+function resetAll(){
+  if(confirm("Reset all records?")){
+    localStorage.removeItem(STORAGE_KEY);
+    editingId=null;
+    render(); resetFormForNext(); toast("All records reset.");
+  }
+}
+function downloadJSON(){
+  const blob=new Blob([JSON.stringify(load(),null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="dib-finance-tracker-v4-backup.json";
+  a.click();
+}
+function importJSON(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const d=JSON.parse(reader.result);
+      if(!d.payments || !Array.isArray(d.payments)) throw new Error();
+      save(d); render(); resetFormForNext(); toast("Backup imported.");
+    }catch(err){ alert("Invalid backup file.");}
+  };
+  reader.readAsText(file);
+  e.target.value="";
+}
+function exportPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  const type=document.getElementById("reportType").value;
+  const data=load();
+  const rows=scheduleRows();
+  const totalPaid=data.payments.reduce((s,p)=>s+Number(p.amount||0),0);
+  let y=16;
+  doc.setFontSize(16); doc.text("DIB Car Finance Tracker V4",14,y); y+=8;
+  doc.setFontSize(10); doc.text("Paid: "+fmtAED(totalPaid)+" | Remaining: "+fmtAED(Math.max(TOTAL-totalPaid,0))+" | Total: "+fmtAED(TOTAL),14,y); y+=8;
+  if(type==="history"){
+    doc.text("Date",14,y); doc.text("Time",46,y); doc.text("Amount",70,y); doc.text("Inst.",110,y); doc.text("Note",132,y); y+=6;
+    data.payments.forEach(p=>{ if(y>280){doc.addPage();y=16;} doc.text(p.date,14,y); doc.text(p.time||"-",46,y); doc.text(fmtAED(p.amount),70,y); doc.text("#"+p.installment,110,y); doc.text((p.note||"-").slice(0,35),132,y); y+=6; });
+  }else{
+    const chosen=type==="paid"?rows.filter(r=>r.status==="Paid"):type==="remaining"?rows.filter(r=>r.status!=="Paid"):rows;
+    doc.text("#",14,y); doc.text("Due",26,y); doc.text("Paid",68,y); doc.text("Remaining",108,y); doc.text("Status",154,y); y+=6;
+    chosen.forEach(r=>{ if(y>280){doc.addPage();y=16;} doc.text(String(r.no),14,y); doc.text(fmtDate(r.due),26,y); doc.text(fmtAED(r.paid),68,y); doc.text(fmtAED(r.remaining),108,y); doc.text(r.status,154,y); y+=6; });
+  }
+  doc.save("DIB-Car-Finance-V4-"+type+".pdf");
+}
+function initApp(){ render(); resetFormForNext(); }
+</script>
+</body>
+</html>
